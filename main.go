@@ -3,7 +3,6 @@ package main
 import (
 	"bufio"
 	"fmt"
-	"log"
 	"os"
 	"strings"
 )
@@ -11,19 +10,19 @@ import (
 const dataPathEnv = "NEXTWORD_DATA_PATH"
 
 func main() {
-	log.Fatal(run())
+	os.Exit(run())
 }
 
-func run() error {
-	return fmt.Errorf("serve error: %w", serve())
+func run() int {
+	if err := serve(); err != nil {
+		fmt.Fprintf(os.Stderr, "serve error: %v", err)
+		return 1
+	}
+	return 0
 }
 
 func serve() error {
-	sg, err := NewSuggester(os.Getenv(dataPathEnv), 100)
-	if err != nil {
-		return fmt.Errorf("cannot create suggester: %w", err)
-	}
-	defer sg.Close()
+	sg := NewSuggester(os.Getenv(dataPathEnv), 100)
 
 	sc := bufio.NewScanner(os.Stdin)
 	for sc.Scan() {

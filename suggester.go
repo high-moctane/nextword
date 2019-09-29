@@ -7,49 +7,22 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
-
-	"github.com/high-moctane/nwenc"
 )
 
 type Suggester struct {
 	dataPath     string
-	om           nwenc.OffsetMapper
-	fOneGram     *os.File
 	candidateLen int
 }
 
-func NewSuggester(dataPath string, candidateLen int) (*Suggester, error) {
-	s := &Suggester{dataPath: dataPath}
-
-	var err error
-	s.fOneGram, err = os.Open(s.filePath(1, ""))
-	if err != nil {
-		return nil, fmt.Errorf("cannot open %s: %w", s.filePath(1, ""), err)
-	}
-	info, err := s.fOneGram.Stat()
-	if err != nil {
-		return nil, fmt.Errorf("cannot get file info: %w", err)
-	}
-
-	s.om = nwenc.NewCachedSeekOffsetMapper(s.fOneGram, info.Size())
-
-	if candidateLen < 1 {
-		return nil, fmt.Errorf("candidateLen must be positive int, but %d", candidateLen)
-	}
-	s.candidateLen = candidateLen
-
-	return s, nil
-}
-
-func (sg *Suggester) Close() error {
-	return sg.fOneGram.Close()
+func NewSuggester(dataPath string, candidateLen int) *Suggester {
+	return &Suggester{dataPath: dataPath, candidateLen: candidateLen}
 }
 
 func (*Suggester) fileName(n int, prefix string) string {
 	if n == 1 {
 		return "1gram.txt"
 	}
-	return fmt.Sprintf("%dgram-%s", n, prefix)
+	return fmt.Sprintf("%dgram-%s.txt", n, prefix)
 }
 
 func (sg *Suggester) filePath(n int, prefix string) string {
@@ -57,8 +30,6 @@ func (sg *Suggester) filePath(n int, prefix string) string {
 }
 
 func (sg *Suggester) Suggest(query string) (candidates []string, err error) {
-	candidates = []string{}
-
 	if query == "" {
 		return
 	}
@@ -85,8 +56,12 @@ func (sg *Suggester) Suggest(query string) (candidates []string, err error) {
 		candidates = append(candidates, cand...)
 	}
 
-	candidates = sg.uniqCandidates(candidates)
+	// filter candidates
 	candidates = sg.filterCandidates(candidates, prefix)
+	candidates = sg.uniqCandidates(candidates)
+	if len(candidates) > sg.candidateLen {
+		candidates = candidates[:sg.candidateLen]
+	}
 	return
 }
 
@@ -115,6 +90,36 @@ func (*Suggester) parseQuery(input string) (words []string, prefix string) {
 }
 
 func (sg *Suggester) suggestNgram(words []string) (candidates []string, err error) {
+	// open data
+	n := len(words) + 1
+	initial := strings.ToLower(string([]rune(words[0])[0]))
+	f, err := os.Open(sg.filePath(n, initial))
+	if err != nil {
+		return
+	}
+	defer f.Close()
+	info, err := f.Stat()
+	if err != nil {
+		return
+	}
+
+	// search for a head offset which the query starts
+	query := strings.Join(words, " ") + "\t"
+	offset, err := sg.binSearch(f, info.Size(), query)
+	if err != nil {
+		return
+	}
+
+	entry, err := sg.readLine(f, offset, info.Size())
+	if err != nil {
+		return
+	}
+	if !strings.HasPrefix(entry, query) {
+		// no matching
+		return
+	}
+
+	candidates = strings.Split(strings.Split(entry, "\t")[1], " ")
 	return
 }
 
@@ -130,8 +135,8 @@ func (sg *Suggester) suggest1gram(prefix string) (candidates []string, err error
 		return
 	}
 
-	// search head offset which prefix starts
-	offset, err := sg.binSearch(f, info.Size(), []byte(prefix), []byte{'\n'})
+	// search for a head offset which the prefix starts
+	offset, err := sg.binSearch(f, info.Size(), prefix)
 	if err != nil {
 		return
 	}
@@ -140,22 +145,23 @@ func (sg *Suggester) suggest1gram(prefix string) (candidates []string, err error
 	sr := io.NewSectionReader(f, offset, info.Size()-offset)
 	sc := bufio.NewScanner(sr)
 	for i := 0; i < sg.candidateLen; i++ {
-		sc.Scan()
+		if sc.Scan() {
+			if !strings.HasPrefix(sc.Text(), prefix) {
+				break
+			}
+			candidates = append(candidates, sc.Text())
+		}
 		if sc.Err() != nil {
 			err = sc.Err()
 			return
 		}
-		if !strings.HasPrefix(sc.Text(), prefix) {
-			break
-		}
-		candidates = append(candidates, sc.Text())
 	}
 
 	return
 }
 
 func (*Suggester) uniqCandidates(candidates []string) []string {
-	res := []string{}
+	var res []string
 	set := map[string]bool{} // set ot candidates
 
 	for _, word := range candidates {
@@ -170,7 +176,7 @@ func (*Suggester) uniqCandidates(candidates []string) []string {
 }
 
 func (*Suggester) filterCandidates(candidates []string, prefix string) []string {
-	res := make([]string, 0, len(candidates))
+	var res []string
 	for _, word := range candidates {
 		if strings.HasPrefix(word, prefix) {
 			res = append(res, word)
@@ -179,35 +185,34 @@ func (*Suggester) filterCandidates(candidates []string, prefix string) []string 
 	return res
 }
 
-func (sg *Suggester) binSearch(r io.ReaderAt, size int64, query []byte, delim []byte) (offset int64, err error) {
+func (sg *Suggester) binSearch(r io.ReaderAt, size int64, query string) (offset int64, err error) {
 	var left int64
 	right := size
 
 	for left <= right {
 		mid := left + (right-left)/2
 
-		offset, err = sg.findHeadOfLine(r, mid, delim)
+		offset, err = sg.findHeadOfLine(r, mid)
 		if err != nil {
 			return
 		}
 
-		var b []byte
-		b, err = sg.readBytes(r, offset, delim)
+		var line string
+		line, err = sg.readLine(r, offset, size)
 		if err != nil {
 			return
 		}
 
-		cmp := sg.cmpBytes(query, b)
-		if cmp < 0 {
+		if query < line {
 			right = mid - 1
-		} else if cmp > 0 {
+		} else if query > line {
 			left = mid + 1
 		} else {
 			return
 		}
 	}
 
-	offset, err = sg.findHeadOfLine(r, left, delim)
+	offset, err = sg.findHeadOfLine(r, left)
 	if err != nil {
 		return
 	}
@@ -215,25 +220,35 @@ func (sg *Suggester) binSearch(r io.ReaderAt, size int64, query []byte, delim []
 	return
 }
 
-func (sg *Suggester) findHeadOfLine(r io.ReaderAt, offset int64, delim []byte) (head int64, err error) {
-	// Because the data is encoded in fixed codeword length coding,
-	// offsets are 0 mod len(delim).
+func (sg *Suggester) findHeadOfLine(r io.ReaderAt, offset int64) (head int64, err error) {
 	// The initial value of head is a previous value from the offset.
-	delimLen := int64(len(delim))
-	for head = offset - offset%delimLen - delimLen; head > 0; head -= delimLen {
-		buf := make([]byte, delimLen)
+	for head = offset - 1; ; head-- {
+		if head <= 0 {
+			head = 0
+			return
+		}
+
+		buf := make([]byte, 1)
 		if _, err = r.ReadAt(buf, head); err != nil {
 			return
 		}
 
-		if sg.cmpBytes(buf, delim) == 0 {
-			head += delimLen
+		if buf[0] == '\n' {
+			head++
 			return
 		}
 	}
-	return
 }
 
-func (*Suggester) readBytes(r io.ReaderAt, offset int64, delim []byte) (b []byte, err error) {
-
+func (*Suggester) readLine(r io.ReaderAt, offset, size int64) (line string, err error) {
+	sr := io.NewSectionReader(r, offset, size-offset)
+	sc := bufio.NewScanner(sr)
+	if sc.Scan() {
+		line = sc.Text()
+	}
+	if sc.Err() != nil {
+		err = sc.Err()
+		return
+	}
+	return
 }

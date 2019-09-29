@@ -7,7 +7,7 @@ import (
 	"testing"
 )
 
-const EnvDataPath = "NEXTWORD_DATA_PATH"
+var EnvDataPath = os.Getenv("NEXTWORD_DATA_PATH")
 
 func TestSuggester_Suggest(t *testing.T) {
 	tests := []struct {
@@ -25,7 +25,7 @@ func TestSuggester_Suggest(t *testing.T) {
 		{
 			10,
 			"EDM ",
-			[]string{"is", "andprocess", "instruments", "instrument"},
+			[]string{"is", "and", "process", "instruments", "instrument"},
 			nil,
 		},
 		{
@@ -35,13 +35,59 @@ func TestSuggester_Suggest(t *testing.T) {
 				"EDMONDSON", "EDMONSON", "EDMONSTON"},
 			nil,
 		},
+		{
+			20,
+			"you could not buy ",
+			[]string{
+				"a", "the", "it", "them", "anything",
+				"any", "or", "him", "his", "that",
+				"one", "in", "her", "land", "food",
+				"their", "into", "from", "this", "me",
+			},
+			nil,
+		},
+		{
+			20,
+			"you could not buy ",
+			[]string{
+				"a", "the", "it", "them", "anything",
+				"any", "or", "him", "his", "that",
+				"one", "in", "her", "land", "food",
+				"their", "into", "from", "this", "me",
+			},
+			nil,
+		},
+		{
+			20,
+			"may be until day ",
+			[]string{
+				"after", "of", "and", "in", "to",
+				"the", "or", "I", "when", "for",
+				"he", "before", "was", "is", "that",
+				"at", "on", "by", "with", "we",
+			},
+			nil,
+		},
+		{
+			15,
+			"just for a few m",
+			[]string{
+				"minutes", "moments", "months", "more", "miles",
+				"minor", "men", "million", "milliseconds", "members",
+				"m", "m!", "m'", "m'1", "m'2",
+			},
+			nil,
+		},
+		{
+			20,
+			"aaaaaaaaa bbbbbbbbbb ccccccccccc dddddddddd eeeeeeeeaaa",
+			nil,
+			nil,
+		},
 	}
 
 	for idx, test := range tests {
-		sg, err := NewSuggester(os.Getenv(EnvDataPath), test.candidatesLen)
-		if err != nil {
-			t.Fatal(err)
-		}
+		sg := NewSuggester(EnvDataPath, test.candidatesLen)
 
 		cand, err := sg.Suggest(test.query)
 		if err != nil {
@@ -53,12 +99,10 @@ func TestSuggester_Suggest(t *testing.T) {
 		if !reflect.DeepEqual(test.candidates, cand) {
 			t.Errorf("[%d] expected %v, but got %v", idx, test.candidates, cand)
 		}
-
-		sg.Close()
 	}
 }
 
-func TestSuggester_ParseInput(t *testing.T) {
+func TestSuggester_ParseQuery(t *testing.T) {
 	tests := []struct {
 		query  string
 		words  []string
@@ -114,7 +158,47 @@ func TestSuggester_ParseInput(t *testing.T) {
 }
 
 func TestSuggester_SuggestNgram(t *testing.T) {
-	t.FailNow()
+	tests := []struct {
+		words      []string
+		candidates []string
+	}{
+		{
+			[]string{"objectivation"},
+			[]string{"of", "and"},
+		},
+		{
+			[]string{"committee", "feels"},
+			[]string{"that"},
+		},
+		{
+			[]string{"these", "steps", "are"},
+			[]string{"taken", "not", "completed"},
+		},
+		{
+			[]string{"Have", "you", "seen", "or"},
+			[]string{"heard"},
+		},
+		{
+			[]string{"brousa"},
+			nil,
+		},
+		{
+			[]string{"I felt paint"},
+			nil,
+		},
+	}
+
+	for idx, test := range tests {
+		sg := NewSuggester(EnvDataPath, 100)
+		cand, err := sg.suggestNgram(test.words)
+		if err != nil {
+			t.Errorf("[%d] unexpected error: %v", idx, err)
+			continue
+		}
+		if !reflect.DeepEqual(test.candidates, cand) {
+			t.Errorf("[%d] expected %v, but got %v", idx, test.candidates, cand)
+		}
+	}
 }
 
 func TestSuggester_Suggest1gram(t *testing.T) {
@@ -131,13 +215,28 @@ func TestSuggester_Suggest1gram(t *testing.T) {
 				"poundal", "poundals", "poundcake", "pounde", "pounded"},
 			nil,
 		},
+		{
+			5,
+			"Kumu",
+			[]string{"Kumu", "Kumud", "Kumuda", "Kumudini", "Kumuhonua"},
+			nil,
+		},
+		{
+			5,
+			"NT/2000",
+			[]string{"NT/2000", "NT/2000/XP"},
+			nil,
+		},
+		{
+			5,
+			"Sehoraaaaaaaa",
+			nil,
+			nil,
+		},
 	}
 
 	for idx, test := range tests {
-		sg, err := NewSuggester(os.Getenv(EnvDataPath), test.candidatesLen)
-		if err != nil {
-			t.Fatalf("[%d] cannot create Suggester: %v", idx, err)
-		}
+		sg := NewSuggester(EnvDataPath, test.candidatesLen)
 
 		cand, err := sg.suggest1gram(test.prefix)
 		if !reflect.DeepEqual(test.err, err) {
@@ -150,8 +249,6 @@ func TestSuggester_Suggest1gram(t *testing.T) {
 		if !reflect.DeepEqual(test.candidates, cand) {
 			t.Errorf("[%d] expected %v, but got %v", idx, test.candidates, cand)
 		}
-
-		sg.Close()
 	}
 }
 
@@ -161,7 +258,7 @@ func TestSuggester_UniqCandidates(t *testing.T) {
 	}{
 		{
 			[]string{},
-			[]string{},
+			nil,
 		},
 		{
 			[]string{"abc"},
@@ -203,12 +300,12 @@ func TestSuggester_FilterCandidates(t *testing.T) {
 		{
 			[]string{},
 			"",
-			[]string{},
+			nil,
 		},
 		{
 			[]string{},
 			"prefix",
-			[]string{},
+			nil,
 		},
 		{
 			[]string{"abc"},
@@ -223,7 +320,7 @@ func TestSuggester_FilterCandidates(t *testing.T) {
 		{
 			[]string{"abc"},
 			"ae",
-			[]string{},
+			nil,
 		},
 		{
 			[]string{"abc", "bcd", "abd", "abe", "ade", "absent"},
@@ -242,61 +339,35 @@ func TestSuggester_FilterCandidates(t *testing.T) {
 }
 
 func TestSuggester_BinSearch(t *testing.T) {
-	dataPath := os.Getenv(EnvDataPath)
-
 	tests := []struct {
 		filePath string
-		query    []byte
-		delim    []byte
+		query    string
 		offset   int64
 	}{
 		{
-			filepath.Join(dataPath, "1gram.txt"),
-			[]byte("A"),
-			[]byte{'\n'},
+			filepath.Join(EnvDataPath, "1gram.txt"),
+			"A",
 			0,
 		},
 		{
-			filepath.Join(dataPath, "1gram.txt"),
-			[]byte("Signifi"),
-			[]byte{'\n'},
-			5423021,
+			filepath.Join(EnvDataPath, "1gram.txt"),
+			"zł",
+			11346418,
 		},
 		{
-			filepath.Join(dataPath, "1gram.txt"),
-			[]byte("zzzzzz"),
-			[]byte{'\n'},
-			11346353,
+			filepath.Join(EnvDataPath, "1gram.txt"),
+			"Recu",
+			4901265,
 		},
 		{
-			filepath.Join(dataPath, "1gram.txt"),
-			[]byte("LIPKINAA"),
-			[]byte{'\n'},
-			34242490,
+			filepath.Join(EnvDataPath, "1gram.txt"),
+			"Latemaa",
+			3303588,
 		},
 		{
-			filepath.Join(dataPath, "1gram.txt"),
-			[]byte("dna0"),
-			[]byte{'\n'},
-			7736920,
-		},
-		{
-			filepath.Join(dataPath, "5gram-q"),
-			[]byte{0x46, 0xAD, 0x24},
-			[]byte{0xFF, 0xFF, 0xFF},
-			0,
-		},
-		{
-			filepath.Join(dataPath, "5gram-q"),
-			[]byte{0x99, 0x68, 0x56, 0xA5},
-			[]byte{0xFF, 0xFF, 0xFF},
-			0x6ABF,
-		},
-		{
-			filepath.Join(dataPath, "5gram-q"),
-			[]byte{0x99, 0x47, 0xA5},
-			[]byte{0xFF, 0xFF, 0xFF},
-			0x16E84,
+			filepath.Join(EnvDataPath, "2gram-e.txt"),
+			"ELSE",
+			24641,
 		},
 	}
 
@@ -315,7 +386,7 @@ func TestSuggester_BinSearch(t *testing.T) {
 				return
 			}
 
-			offset, err := sg.binSearch(f, info.Size(), test.query, test.delim)
+			offset, err := sg.binSearch(f, info.Size(), test.query)
 			if err != nil {
 				t.Errorf("[%d] unexpected error: %v", idx, err)
 				return
@@ -329,43 +400,25 @@ func TestSuggester_BinSearch(t *testing.T) {
 }
 
 func TestSuggester_FindHeadOfLine(t *testing.T) {
-	dataPath := os.Getenv(EnvDataPath)
-
 	tests := []struct {
 		filePath string
 		offset   int64
-		delim    []byte
 		head     int64
 	}{
 		{
-			filepath.Join(dataPath, "1gram.txt"),
-			15651,
-			[]byte{'\n'},
-			15643,
+			filepath.Join(EnvDataPath, "1gram.txt"),
+			0,
+			0,
 		},
 		{
-			filepath.Join(dataPath, "1gram.txt"),
-			6503483,
-			[]byte{'\n'},
-			6503483,
+			filepath.Join(EnvDataPath, "1gram.txt"),
+			3,
+			2,
 		},
 		{
-			filepath.Join(dataPath, "1gram.txt"),
-			407317,
-			[]byte{'\n'},
-			407314,
-		},
-		{
-			filepath.Join(dataPath, "5gram-q"),
-			0xC2FA,
-			[]byte{'\n'},
-			0xC2EE,
-		},
-		{
-			filepath.Join(dataPath, "5gram-q"),
-			0xC339,
-			[]byte{'\n'},
-			0xC348,
+			filepath.Join(EnvDataPath, "1gram.txt"),
+			30749,
+			30734,
 		},
 	}
 
@@ -379,7 +432,7 @@ func TestSuggester_FindHeadOfLine(t *testing.T) {
 			}
 			defer f.Close()
 
-			head, err := sg.findHeadOfLine(f, test.offset, test.delim)
+			head, err := sg.findHeadOfLine(f, test.offset)
 			if err != nil {
 				t.Errorf("[%d] unexpected error: %v", idx, err)
 				return
@@ -387,6 +440,52 @@ func TestSuggester_FindHeadOfLine(t *testing.T) {
 
 			if test.head != head {
 				t.Errorf("[%d] expected %d, but got %d", idx, test.head, head)
+			}
+		}()
+	}
+}
+
+func TestSuggester_ReadLine(t *testing.T) {
+	tests := []struct {
+		filePath string
+		offset   int64
+		line     string
+	}{
+		{
+			filepath.Join(EnvDataPath, "1gram.txt"),
+			0,
+			"A",
+		},
+		{
+			filepath.Join(EnvDataPath, "2gram-e.txt"),
+			13617,
+			"EDUCA\tTION",
+		},
+	}
+
+	for idx, test := range tests {
+		func() {
+			f, err := os.Open(test.filePath)
+			if err != nil {
+				t.Errorf("[%d] unexpected error: %v", idx, err)
+				return
+			}
+			defer f.Close()
+			info, err := f.Stat()
+			if err != nil {
+				t.Errorf("[%d] unexpected error: %v", idx, err)
+				return
+			}
+
+			sg := new(Suggester)
+			line, err := sg.readLine(f, test.offset, info.Size())
+			if err != nil {
+				t.Errorf("[%d] unexpected error: %v", idx, err)
+				return
+			}
+
+			if test.line != line {
+				t.Errorf("[%d] expected %#v, but got %#v", idx, test.line, line)
 			}
 		}()
 	}
