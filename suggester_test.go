@@ -102,6 +102,14 @@ func TestSuggester_Suggest(t *testing.T) {
 	}
 }
 
+func BenchmarkSuggester_Suggest(b *testing.B) {
+	sg := NewSuggester(EnvDataPath, 100)
+
+	for i := 0; i < b.N; i++ {
+		sg.Suggest("The quick brown fox ju")
+	}
+}
+
 func TestSuggester_ParseQuery(t *testing.T) {
 	tests := []struct {
 		query  string
