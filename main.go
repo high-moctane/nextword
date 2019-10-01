@@ -22,7 +22,19 @@ func main() {
 
 func run() int {
 	if !parseArgs() {
+		help := `The nextword prints the most likely English words that follow the stdin sentence.
+
+The space character at the end of line plays an important role. If the line ends
+with a space, the command show the next suggested words. However, if the line
+ends with an alphabetic character, the suggested words start with the last word
+of the line.
+
+This command needs an external dataset. The dataset path should be set in an
+environment value "$NEXTWORD_DATA_PATH". `
+
 		flag.Usage()
+		fmt.Fprintln(os.Stderr, "")
+		fmt.Fprintln(os.Stderr, help)
 		return 1
 	}
 
