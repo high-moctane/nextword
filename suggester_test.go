@@ -194,6 +194,14 @@ func TestSuggester_SuggestNgram(t *testing.T) {
 			[]string{"I felt paint"},
 			nil,
 		},
+		{
+			[]string{"0000000000"},
+			nil,
+		},
+		{
+			[]string{"🤔"},
+			nil,
+		},
 	}
 
 	for idx, test := range tests {

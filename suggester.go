@@ -93,6 +93,10 @@ func (sg *Suggester) suggestNgram(words []string) (candidates []string, err erro
 	// open data
 	n := len(words) + 1
 	initial := strings.ToLower(string([]rune(words[0])[0]))
+	if (initial < "A" || "Z" <= initial) && (initial < "a" || "z" <= initial) {
+		return
+	}
+
 	f, err := os.Open(sg.filePath(n, initial))
 	if err != nil {
 		return
