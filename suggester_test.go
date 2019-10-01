@@ -7,7 +7,7 @@ import (
 	"testing"
 )
 
-var EnvDataPath = os.Getenv("NEXTWORD_DATA_PATH")
+var EnvDataPathTest = os.Getenv("NEXTWORD_DATA_PATH")
 
 func TestSuggester_Suggest(t *testing.T) {
 	tests := []struct {
@@ -87,7 +87,7 @@ func TestSuggester_Suggest(t *testing.T) {
 	}
 
 	for idx, test := range tests {
-		sg := NewSuggester(EnvDataPath, test.candidatesLen)
+		sg := NewSuggester(EnvDataPathTest, test.candidatesLen)
 
 		cand, err := sg.Suggest(test.query)
 		if err != nil {
@@ -103,7 +103,7 @@ func TestSuggester_Suggest(t *testing.T) {
 }
 
 func BenchmarkSuggester_Suggest(b *testing.B) {
-	sg := NewSuggester(EnvDataPath, 100)
+	sg := NewSuggester(EnvDataPathTest, 100)
 
 	for i := 0; i < b.N; i++ {
 		sg.Suggest("The quick brown fox ju")
@@ -195,17 +195,17 @@ func TestSuggester_SuggestNgram(t *testing.T) {
 			nil,
 		},
 		{
-			[]string{"0000000000"},
+			[]string{"0000000000 11111111 "},
 			nil,
 		},
 		{
-			[]string{"🤔"},
+			[]string{"🤔 🤗 "},
 			nil,
 		},
 	}
 
 	for idx, test := range tests {
-		sg := NewSuggester(EnvDataPath, 100)
+		sg := NewSuggester(EnvDataPathTest, 100)
 		cand, err := sg.suggestNgram(test.words)
 		if err != nil {
 			t.Errorf("[%d] unexpected error: %v", idx, err)
@@ -252,7 +252,7 @@ func TestSuggester_Suggest1gram(t *testing.T) {
 	}
 
 	for idx, test := range tests {
-		sg := NewSuggester(EnvDataPath, test.candidatesLen)
+		sg := NewSuggester(EnvDataPathTest, test.candidatesLen)
 
 		cand, err := sg.suggest1gram(test.prefix)
 		if !reflect.DeepEqual(test.err, err) {
@@ -361,27 +361,27 @@ func TestSuggester_BinSearch(t *testing.T) {
 		offset   int64
 	}{
 		{
-			filepath.Join(EnvDataPath, "1gram.txt"),
+			filepath.Join(EnvDataPathTest, "1gram.txt"),
 			"A",
 			0,
 		},
 		{
-			filepath.Join(EnvDataPath, "1gram.txt"),
+			filepath.Join(EnvDataPathTest, "1gram.txt"),
 			"zł",
 			11346418,
 		},
 		{
-			filepath.Join(EnvDataPath, "1gram.txt"),
+			filepath.Join(EnvDataPathTest, "1gram.txt"),
 			"Recu",
 			4901265,
 		},
 		{
-			filepath.Join(EnvDataPath, "1gram.txt"),
+			filepath.Join(EnvDataPathTest, "1gram.txt"),
 			"Latemaa",
 			3303588,
 		},
 		{
-			filepath.Join(EnvDataPath, "2gram-e.txt"),
+			filepath.Join(EnvDataPathTest, "2gram-e.txt"),
 			"ELSE",
 			24641,
 		},
@@ -422,17 +422,17 @@ func TestSuggester_FindHeadOfLine(t *testing.T) {
 		head     int64
 	}{
 		{
-			filepath.Join(EnvDataPath, "1gram.txt"),
+			filepath.Join(EnvDataPathTest, "1gram.txt"),
 			0,
 			0,
 		},
 		{
-			filepath.Join(EnvDataPath, "1gram.txt"),
+			filepath.Join(EnvDataPathTest, "1gram.txt"),
 			3,
 			2,
 		},
 		{
-			filepath.Join(EnvDataPath, "1gram.txt"),
+			filepath.Join(EnvDataPathTest, "1gram.txt"),
 			30749,
 			30734,
 		},
@@ -468,12 +468,12 @@ func TestSuggester_ReadLine(t *testing.T) {
 		line     string
 	}{
 		{
-			filepath.Join(EnvDataPath, "1gram.txt"),
+			filepath.Join(EnvDataPathTest, "1gram.txt"),
 			0,
 			"A",
 		},
 		{
-			filepath.Join(EnvDataPath, "2gram-e.txt"),
+			filepath.Join(EnvDataPathTest, "2gram-e.txt"),
 			13617,
 			"EDUCA\tTION",
 		},
