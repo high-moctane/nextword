@@ -15,6 +15,7 @@ const envDataPath = "NEXTWORD_DATA_PATH"
 var dataPath = flag.String("data", os.Getenv(envDataPath), "path to data directory")
 var maxCandidatesNum = flag.Int("candidates-num", 100, "max candidates num (positive int)")
 var helpFlag = flag.Bool("h", false, "show this message")
+var greedyFlag = flag.Bool("greedy", false, "show as many result as possible")
 
 func main() {
 	os.Exit(run())
@@ -46,7 +47,7 @@ environment value "$NEXTWORD_DATA_PATH". `
 }
 
 func serve() error {
-	sg := NewSuggester(*dataPath, *maxCandidatesNum)
+	sg := NewSuggester(*dataPath, *maxCandidatesNum, *greedyFlag)
 
 	sc := bufio.NewScanner(os.Stdin)
 	for sc.Scan() {

@@ -12,10 +12,15 @@ import (
 type Suggester struct {
 	dataPath     string
 	candidateLen int
+	greedy       bool
 }
 
-func NewSuggester(dataPath string, candidateLen int) *Suggester {
-	return &Suggester{dataPath: dataPath, candidateLen: candidateLen}
+func NewSuggester(dataPath string, candidateLen int, greedy bool) *Suggester {
+	return &Suggester{
+		dataPath:     dataPath,
+		candidateLen: candidateLen,
+		greedy:       greedy,
+	}
 }
 
 func (*Suggester) fileName(n int, prefix string) string {
@@ -44,6 +49,17 @@ func (sg *Suggester) Suggest(query string) (candidates []string, err error) {
 			return
 		}
 		candidates = append(candidates, cand...)
+
+		// return when non greedy with non empty candidates
+		if !sg.greedy {
+			candidates = sg.filterCandidates(candidates, prefix)
+			if len(candidates) > sg.candidateLen {
+				candidates = candidates[:sg.candidateLen]
+			}
+			if len(candidates) > 0 {
+				return
+			}
+		}
 	}
 
 	// search 1gram
