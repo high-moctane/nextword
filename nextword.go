@@ -21,6 +21,7 @@ type Nextword struct {
 
 // NewNextword returns new Nextword. If dataPath is not valid, err will be not nil.
 func NewNextword(dataPath string, params *NextwordParams) (*Nextword, error) {
+	// dataPath
 	fi, err := os.Stat(dataPath)
 	if err != nil {
 		return nil, errors.New(`"NEXTWORD_DATA_PATH" environment variable is not set`)
@@ -28,6 +29,12 @@ func NewNextword(dataPath string, params *NextwordParams) (*Nextword, error) {
 	if !fi.IsDir() {
 		return nil, errors.New(`invalid "NEXTWORD_DATA_PATH"`)
 	}
+
+	// candidate-num
+	if params.CandidateNum <= 0 {
+		return nil, errors.New("candidate-num must be positive intager")
+	}
+
 	return &Nextword{
 		DataPath:        dataPath,
 		ReadLineBufSize: ReadLineBufSize,
