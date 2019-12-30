@@ -26,18 +26,31 @@ func setNextwordTestDataPath() error {
 	return nil
 }
 
-func TestNextword(t *testing.T) {
+func TestNewNextword(t *testing.T) {
 	tests := []struct {
-		path string
-		ok   bool
+		params *NextwordParams
+		ok     bool
 	}{
-		{NextwordTestDataPath, true},
-		{"", false},
-		{"/invalid/invalid/invalid/invalid/invalid/invalid", false},
+		{
+			&NextwordParams{NextwordTestDataPath, 10, false},
+			true,
+		},
+		{
+			&NextwordParams{"", 10, false},
+			false,
+		},
+		{
+			&NextwordParams{"/invalid/invalid/invalid/invalid/invalid/invalid", 10, false},
+			false,
+		},
+		{
+			&NextwordParams{NextwordTestDataPath, 0, false},
+			false,
+		},
 	}
 
 	for idx, test := range tests {
-		_, err := NewNextword(test.path, nil)
+		_, err := NewNextword(test.params)
 		if (err == nil) != test.ok {
 			t.Errorf("[%d] unexpected error: %v", idx, err)
 		}
@@ -55,6 +68,7 @@ func TestNextword_Suggest(t *testing.T) {
 		{
 			"misera",
 			&NextwordParams{
+				DataPath:     NextwordTestDataPath,
 				CandidateNum: 10,
 				Greedy:       false,
 			},
@@ -66,6 +80,7 @@ func TestNextword_Suggest(t *testing.T) {
 		{
 			"by thermodynamic ",
 			&NextwordParams{
+				DataPath:     NextwordTestDataPath,
 				CandidateNum: 10,
 				Greedy:       false,
 			},
@@ -77,6 +92,7 @@ func TestNextword_Suggest(t *testing.T) {
 		{
 			"with the English a",
 			&NextwordParams{
+				DataPath:     NextwordTestDataPath,
 				CandidateNum: 5,
 				Greedy:       false,
 			},
@@ -88,6 +104,7 @@ func TestNextword_Suggest(t *testing.T) {
 		{
 			"young ",
 			&NextwordParams{
+				DataPath:     NextwordTestDataPath,
 				CandidateNum: 10,
 				Greedy:       false,
 			},
@@ -100,6 +117,7 @@ func TestNextword_Suggest(t *testing.T) {
 		{
 			"the consumptions ",
 			&NextwordParams{
+				DataPath:     NextwordTestDataPath,
 				CandidateNum: 10,
 				Greedy:       true,
 			},
@@ -111,6 +129,7 @@ func TestNextword_Suggest(t *testing.T) {
 		{
 			"gur bjf ",
 			&NextwordParams{
+				DataPath:     NextwordTestDataPath,
 				CandidateNum: 10,
 				Greedy:       false,
 			},
@@ -122,6 +141,7 @@ func TestNextword_Suggest(t *testing.T) {
 		{
 			"gurbjf",
 			&NextwordParams{
+				DataPath:     NextwordTestDataPath,
 				CandidateNum: 10,
 				Greedy:       false,
 			},
@@ -133,6 +153,7 @@ func TestNextword_Suggest(t *testing.T) {
 		{
 			"zzzzzzzzzzzzzzzzzzzzz zzzzzzzzzzzzzzzz",
 			&NextwordParams{
+				DataPath:     NextwordTestDataPath,
 				CandidateNum: 10,
 				Greedy:       false,
 			},
@@ -142,7 +163,7 @@ func TestNextword_Suggest(t *testing.T) {
 	}
 
 	for idx, test := range tests {
-		nw, err := NewNextword(NextwordTestDataPath, test.params)
+		nw, err := NewNextword(test.params)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -170,10 +191,11 @@ func BenchmarkNextword_Suggest(b *testing.B) {
 	}
 
 	params := &NextwordParams{
+		DataPath:     NextwordTestDataPath,
 		CandidateNum: 100000,
 		Greedy:       true,
 	}
-	nw, err := NewNextword(NextwordTestDataPath, params)
+	nw, err := NewNextword(params)
 	if err != nil {
 		b.Fatal(err)
 	}
@@ -213,7 +235,10 @@ func TestNextword_ParseInput(t *testing.T) {
 	}
 
 	for idx, test := range tests {
-		nw, err := NewNextword(NextwordTestDataPath, nil)
+		nw, err := NewNextword(&NextwordParams{
+			DataPath:     NextwordTestDataPath,
+			CandidateNum: 10,
+		})
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -259,7 +284,10 @@ func TestNextword_SearchNgram(t *testing.T) {
 	}
 
 	for idx, test := range tests {
-		nw, err := NewNextword(NextwordTestDataPath, nil)
+		nw, err := NewNextword(&NextwordParams{
+			DataPath:     NextwordTestDataPath,
+			CandidateNum: 10,
+		})
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -308,7 +336,10 @@ func TestNextword_SearchOneGram(t *testing.T) {
 	}
 
 	for idx, test := range tests {
-		nw, err := NewNextword(NextwordTestDataPath, nil)
+		nw, err := NewNextword(&NextwordParams{
+			DataPath:     NextwordTestDataPath,
+			CandidateNum: 10,
+		})
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -382,7 +413,10 @@ func TestNextword_BinarySearch(t *testing.T) {
 	}
 
 	for idx, test := range tests {
-		nw, err := NewNextword(NextwordTestDataPath, nil)
+		nw, err := NewNextword(&NextwordParams{
+			DataPath:     NextwordTestDataPath,
+			CandidateNum: 10,
+		})
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -461,12 +495,15 @@ func TestNextword_ReadLine(t *testing.T) {
 
 	for idx, test := range tests {
 		func() {
-			nw, err := NewNextword(NextwordTestDataPath, nil)
+			nw, err := NewNextword(&NextwordParams{
+				DataPath:     NextwordTestDataPath,
+				CandidateNum: 10,
+			})
 			if err != nil {
 				t.Errorf("unexpected error: %v", err)
 			}
 
-			nw.ReadLineBufSize = test.bufSize
+			nw.readLineBufSize = test.bufSize
 
 			path := filepath.Join(NextwordTestDataPath, test.fname)
 			f, err := os.Open(path)

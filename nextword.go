@@ -12,17 +12,28 @@ import (
 // ReadLineBufSize is buffer size for Nextword.ReadLine
 var ReadLineBufSize = 1024 // 1024 is fast (?)
 
-// Nextword suggests next English words.
-type Nextword struct {
-	DataPath        string
-	ReadLineBufSize int
-	Params          *NextwordParams
+// NextwordParams is a Nextword parameter.
+type NextwordParams struct {
+	DataPath     string
+	CandidateNum int  // Number of candidates
+	Greedy       bool // If true, Nextword suggests words from all n-gram data.
 }
 
-// NewNextword returns new Nextword. If dataPath is not valid, err will be not nil.
-func NewNextword(dataPath string, params *NextwordParams) (*Nextword, error) {
-	// dataPath
-	fi, err := os.Stat(dataPath)
+// Nextword suggests next English words.
+type Nextword struct {
+	params          *NextwordParams
+	readLineBufSize int
+}
+
+// NewNextword returns new Nextword. If params is not valid, err will be not nil.
+func NewNextword(params *NextwordParams) (*Nextword, error) {
+	// nil check
+	if params == nil {
+		return nil, errors.New("invalid params")
+	}
+
+	// DataPath
+	fi, err := os.Stat(params.DataPath)
 	if err != nil {
 		return nil, errors.New(`"NEXTWORD_DATA_PATH" environment variable is not set`)
 	}
@@ -32,13 +43,12 @@ func NewNextword(dataPath string, params *NextwordParams) (*Nextword, error) {
 
 	// candidate-num
 	if params.CandidateNum <= 0 {
-		return nil, errors.New("candidate-num must be positive intager")
+		return nil, errors.New("candidate-num must be a positive integer")
 	}
 
 	return &Nextword{
-		DataPath:        dataPath,
-		ReadLineBufSize: ReadLineBufSize,
-		Params:          params,
+		params:          params,
+		readLineBufSize: ReadLineBufSize,
 	}, nil
 }
 
@@ -63,10 +73,10 @@ func (nw *Nextword) Suggest(input string) (candidates []string, err error) {
 		candidates = nw.mergeCandidates(candidates, cand)
 
 		// end condition
-		if len(candidates) > nw.Params.CandidateNum {
-			candidates = candidates[:nw.Params.CandidateNum]
+		if len(candidates) > nw.params.CandidateNum {
+			candidates = candidates[:nw.params.CandidateNum]
 		}
-		if !nw.Params.Greedy && len(candidates) > 0 {
+		if !nw.params.Greedy && len(candidates) > 0 {
 			return
 		}
 	}
@@ -77,8 +87,8 @@ func (nw *Nextword) Suggest(input string) (candidates []string, err error) {
 		return
 	}
 	candidates = nw.mergeCandidates(candidates, cand)
-	if len(candidates) > nw.Params.CandidateNum {
-		candidates = candidates[:nw.Params.CandidateNum]
+	if len(candidates) > nw.params.CandidateNum {
+		candidates = candidates[:nw.params.CandidateNum]
 	}
 
 	return
@@ -116,7 +126,7 @@ func (nw *Nextword) searchNgram(ngram []string) (candidates []string, err error)
 	}
 
 	// open
-	path := filepath.Join(nw.DataPath, fname)
+	path := filepath.Join(nw.params.DataPath, fname)
 	f, err := os.Open(path)
 	if err != nil {
 		return
@@ -167,7 +177,7 @@ func (nw *Nextword) searchOneGram(prefix string) (candidates []string, err error
 	}
 
 	// open
-	path := filepath.Join(nw.DataPath, "1gram.txt")
+	path := filepath.Join(nw.params.DataPath, "1gram.txt")
 	f, err := os.Open(path)
 	if err != nil {
 		return
@@ -260,7 +270,7 @@ func (nw *Nextword) readLine(r io.ReaderAt, offset int64) (string, error) {
 	strBuilder := new(strings.Builder)
 
 	for {
-		buf := make([]byte, nw.ReadLineBufSize)
+		buf := make([]byte, nw.readLineBufSize)
 		n, err := r.ReadAt(buf, offset)
 		if err == io.EOF && n == 0 {
 			return "", err
@@ -321,10 +331,4 @@ func (*Nextword) filterCandidates(cand []string, prefix string) []string {
 	}
 
 	return res
-}
-
-// NextwordParams is a Nextword parameter.
-type NextwordParams struct {
-	CandidateNum int  // Number of candidates
-	Greedy       bool // If true, Nextword suggests words from all n-gram data.
 }

@@ -16,7 +16,7 @@ const nextwordDataPath = "NEXTWORD_DATA_PATH"
 var dataPath = flag.String("data", os.Getenv(nextwordDataPath), "path to the data directory")
 var candidateNum = flag.Int("candidate-num", 100, "max candidates number")
 var helpFlag = flag.Bool("h", false, "show this message")
-var greedyFlag = flag.Bool("greedy", false, "show as many result as possible")
+var greedyFlag = flag.Bool("Greedy", false, "show as many result as possible")
 
 func main() {
 	if err := run(); err != nil {
@@ -35,10 +35,11 @@ func run() error {
 
 	// new nextword
 	params := &NextwordParams{
+		DataPath:     *dataPath,
 		CandidateNum: *candidateNum,
 		Greedy:       *greedyFlag,
 	}
-	nw, err := NewNextword(*dataPath, params)
+	nw, err := NewNextword(params)
 	if err != nil {
 		return err
 	}
