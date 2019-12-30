@@ -1,8 +1,10 @@
 package main
 
 import (
+	"bufio"
 	"errors"
 	"fmt"
+	"github.com/high-moctane/go-readerer"
 	"io"
 	"os"
 	"path/filepath"
@@ -198,20 +200,18 @@ func (nw *Nextword) searchOneGram(prefix string) (candidates []string, err error
 	}
 
 	// collect
-	for {
-		var line string
-		line, err = nw.readLine(f, offset)
-		if err != nil {
-			if err == io.EOF {
-				err = nil
-			}
-			return
-		}
+	r := readerer.FromReaderAt(f, offset)
+	sc := bufio.NewScanner(r)
+	for sc.Scan() {
+		line := sc.Text()
 		if !strings.HasPrefix(line, prefix) {
 			break
 		}
 		candidates = append(candidates, line)
-		offset += int64(len(line)) + 1 // "\n"
+	}
+	if sc.Err() != nil {
+		err = sc.Err()
+		return
 	}
 
 	return
