@@ -12,7 +12,7 @@ import (
 )
 
 // ReadLineBufSize is buffer size for Nextword.ReadLine
-var ReadLineBufSize = 1024 // 1024 is fast (?)
+var ReadLineBufSize = 10000 // 10000 is the fastest value (?)
 
 // NextwordParams is a Nextword parameter.
 type NextwordParams struct {

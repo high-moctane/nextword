@@ -9,10 +9,14 @@ import (
 	"strings"
 )
 
+// Version (semantic)
+const Version = "0.0.1"
+
 // environmental variable
 const nextwordDataPath = "NEXTWORD_DATA_PATH"
 
 // flags
+var versionFlag = flag.Bool("v", false, "show version")
 var dataPath = flag.String("data", os.Getenv(nextwordDataPath), "path to the data directory")
 var candidateNum = flag.Int("candidate-num", 100, "max candidates number")
 var helpFlag = flag.Bool("h", false, "show this message")
@@ -26,6 +30,12 @@ func main() {
 
 func run() error {
 	flag.Parse()
+
+	// version
+	if *versionFlag {
+		showVersion()
+		return nil
+	}
 
 	// help
 	if *helpFlag {
@@ -58,6 +68,10 @@ func run() error {
 	}
 
 	return nil
+}
+
+func showVersion() {
+	fmt.Fprintln(os.Stderr, fmt.Sprintf("nextword version %s", Version))
 }
 
 func showHelpMessage() {
