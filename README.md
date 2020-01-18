@@ -1,7 +1,7 @@
 # Nextword
 Predict a next English word.
 
-![powa](img/terminal.gif)
+![gif](img/terminal.gif)
 
 ## Install
 
