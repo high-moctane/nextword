@@ -202,7 +202,9 @@ func BenchmarkNextword_Suggest(b *testing.B) {
 
 	for i := 0; i < b.N; i++ {
 		query := queries[i%len(queries)]
-		nw.Suggest(query)
+		if _, err := nw.Suggest(query); err != nil {
+			b.Fatal(err)
+		}
 	}
 }
 
