@@ -46,6 +46,15 @@ Example:
 	output: "was would were went with will who wrote when wants ..."
 ```
 
+## Testing
+
+For testing, you need to install nextword-data **LARGE** version and set
+`NEXTWORD_TEST_DATA_PATH` environment variable in advance.
+
+```
+$ go test
+```
+
 ## License
 
 MIT
