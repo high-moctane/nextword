@@ -22,11 +22,11 @@ $ nextword -h
 Nextword prints the most likely English words that follow the stdin sentence.
 
 Usage of /Users/moctane/go/bin/nextword:
-  -Greedy
+  -g
     	show as many result as possible
-  -candidate-num int
+  -c
     	max candidates number (default 100)
-  -data string
+  -d string
     	path to the data directory (default "/Users/moctane/Assets/nextword-data")
   -h	show this message
   -v	show version
@@ -45,10 +45,6 @@ Example:
 	input:  "Alice w"
 	output: "was would were went with will who wrote when wants ..."
 ```
-
-## Contributing
-
-Please feel free to send pull requests.
 
 ## License
 

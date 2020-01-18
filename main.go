@@ -10,17 +10,17 @@ import (
 )
 
 // Version (semantic)
-const Version = "0.0.1"
+const Version = "0.0.2"
 
 // environmental variable
 const nextwordDataPath = "NEXTWORD_DATA_PATH"
 
 // flags
 var versionFlag = flag.Bool("v", false, "show version")
-var dataPath = flag.String("data", os.Getenv(nextwordDataPath), "path to the data directory")
-var candidateNum = flag.Int("candidate-num", 100, "max candidates number")
+var dataPath = flag.String("d", os.Getenv(nextwordDataPath), "path to the data directory")
+var candidateNum = flag.Int("c", 10, "max candidates number")
 var helpFlag = flag.Bool("h", false, "show this message")
-var greedyFlag = flag.Bool("Greedy", false, "show as many result as possible")
+var greedyFlag = flag.Bool("g", false, "show as many result as possible")
 
 func main() {
 	if err := run(); err != nil {
