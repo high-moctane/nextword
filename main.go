@@ -10,7 +10,7 @@ import (
 )
 
 // Version (semantic)
-const Version = "0.0.2"
+const Version = "0.0.3"
 
 // environmental variable
 const nextwordDataPath = "NEXTWORD_DATA_PATH"
