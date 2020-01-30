@@ -160,6 +160,30 @@ func TestNextword_Suggest(t *testing.T) {
 			nil,
 			nil,
 		},
+
+		// not alphabet
+		{
+			"-",
+			&NextwordParams{
+				DataPath:     NextwordTestDataPath,
+				CandidateNum: 10,
+				Greedy:       false,
+			},
+			nil,
+			nil,
+		},
+
+		// not alphabet
+		{
+			"- ",
+			&NextwordParams{
+				DataPath:     NextwordTestDataPath,
+				CandidateNum: 10,
+				Greedy:       false,
+			},
+			nil,
+			nil,
+		},
 	}
 
 	for idx, test := range tests {

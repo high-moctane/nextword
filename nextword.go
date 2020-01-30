@@ -129,6 +129,9 @@ func (nw *Nextword) searchNgram(ngram []string) (candidates []string, err error)
 
 	// open
 	path := filepath.Join(nw.params.DataPath, fname)
+	if _, err = os.Stat(path); err != nil {
+		return nil, nil
+	}
 	f, err := os.Open(path)
 	if err != nil {
 		return
