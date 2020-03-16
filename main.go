@@ -2,6 +2,7 @@ package main
 
 import (
 	"bufio"
+	"errors"
 	"flag"
 	"fmt"
 	"log"
@@ -15,10 +16,14 @@ const Version = "0.0.3"
 // environmental variable
 const nextwordDataPath = "NEXTWORD_DATA_PATH"
 
+// defaults
+const defaultCandidateNum = 10
+
 // flags
 var versionFlag = flag.Bool("v", false, "show version")
 var dataPath = flag.String("d", os.Getenv(nextwordDataPath), "path to the data directory")
-var candidateNum = flag.Int("c", 10, "max candidates number")
+var candidateNumC = flag.Int("c", defaultCandidateNum, "max candidates number (deprecated)")
+var candidateNum = flag.Int("n", defaultCandidateNum, "max candidates number")
 var helpFlag = flag.Bool("h", false, "show this message")
 var greedyFlag = flag.Bool("g", false, "show as many result as possible")
 
@@ -44,10 +49,9 @@ func run() error {
 	}
 
 	// new nextword
-	params := &NextwordParams{
-		DataPath:     *dataPath,
-		CandidateNum: *candidateNum,
-		Greedy:       *greedyFlag,
+	params, err := newNextwordParams()
+	if err != nil {
+		return err
 	}
 	nw, err := NewNextword(params)
 	if err != nil {
@@ -68,6 +72,23 @@ func run() error {
 	}
 
 	return nil
+}
+
+func newNextwordParams() (*NextwordParams, error) {
+	if *candidateNum != defaultCandidateNum && *candidateNumC != defaultCandidateNum {
+		err := errors.New("cannot set both flag -n and -c ")
+		return nil, err
+	}
+	candNum := *candidateNum
+	if *candidateNumC != defaultCandidateNum {
+		candNum = *candidateNumC
+	}
+
+	return &NextwordParams{
+		DataPath:     *dataPath,
+		CandidateNum: candNum,
+		Greedy:       *greedyFlag,
+	}, nil
 }
 
 func showVersion() {

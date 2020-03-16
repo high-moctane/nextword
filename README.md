@@ -3,9 +3,7 @@ Predict a next English word.
 
 ![gif](img/terminal.gif)
 
-## Install
-
-0. (Recommended) Star this repository (｀･ω･´)★
+## Installing
 
 1. [**IMPORTANT**] Install [Nextword-data (https://github.com/high-moctane/nextword-data)](https://github.com/high-moctane/nextword-data)
 
@@ -24,10 +22,10 @@ Nextword prints the most likely English words that follow the stdin sentence.
 Usage of /Users/moctane/go/bin/nextword:
   -g
     	show as many result as possible
-  -c
-    	max candidates number (default 100)
+  -n
+    	max candidates number (default 10)
   -d string
-    	path to the data directory (default "/Users/moctane/Assets/nextword-data")
+    	path to the data directory (default "/path/to/nextword-data")
   -h	show this message
   -v	show version
 
