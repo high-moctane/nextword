@@ -7,11 +7,15 @@ Predict a next English word.
 
 1. [**IMPORTANT**] Install [Nextword-data (https://github.com/high-moctane/nextword-data)](https://github.com/high-moctane/nextword-data)
 
-2. Install this program (You need Go language compiler).
+2. Visit [Releases](https://github.com/high-moctane/nextword/releases) page and
+    download an appropriate binary for your architecture.
 
-    ```bash
+    NOTE: You can also compile this project manually if you want.
+
+    ```
     $ go get -u github.com/high-moctane/nextword
     ```
+
 
 ## Usage
 
