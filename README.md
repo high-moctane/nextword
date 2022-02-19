@@ -1,4 +1,18 @@
 # Nextword
+
+## **🎉 NEW PREDICTION ENGINE [MOCWORD](https://github.com/high-moctane/mocword) IS AVAILABLE 🎉**
+
+[Mocword](https://github.com/high-moctane/mocword) is more advanced engine than Nextword.
+
+- Less data file size
+  - 1.63GB (Nextword) -> 655MB (Mocword)
+- Using latest Google Ngram dataset
+  - 2012 data (Nextword) -> 2020 data (Mocword)
+- More appropriate prediction
+- Less noisy vocabularies
+
+---
+
 Predict a next English word.
 
 ![gif](img/terminal.gif)
@@ -8,14 +22,13 @@ Predict a next English word.
 1. [**IMPORTANT**] Install [Nextword-data (https://github.com/high-moctane/nextword-data)](https://github.com/high-moctane/nextword-data)
 
 2. Visit [Releases](https://github.com/high-moctane/nextword/releases) page and
-    download an appropriate binary for your architecture.
+   download an appropriate binary for your architecture.
 
-    NOTE: You can also compile this project manually if you want.
+   NOTE: You can also compile this project manually if you want.
 
-    ```
-    $ go get -u github.com/high-moctane/nextword
-    ```
-
+   ```
+   $ go get -u github.com/high-moctane/nextword
+   ```
 
 ## Usage
 
